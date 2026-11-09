@@ -1,0 +1,79 @@
+// TECHSHOP — MEDIDAS DAX (geradas, NÃO cadastradas no Power Pivot)
+// Formato com vírgula; no Excel pt-BR talvez seja necessário substituir por ;
+// As medidas com fMetas devem ser analisadas nos recortes lojista + mês.
+
+
+// Total de pedidos válidos | Inteiro
+Pedidos := DISTINCTCOUNT ( fPedidos[Pedido_ID] )
+
+// Pedidos sem cancelamento/devolução | Inteiro
+Pedidos Concluidos := CALCULATE ( [Pedidos], fPedidos[Status] = "Concluído" )
+
+// Quantos pedidos foram cancelados? | Inteiro
+Cancelamentos := CALCULATE ( [Pedidos], fPedidos[Status] = "Cancelado" )
+
+// Quantos pedidos foram devolvidos? | Inteiro
+Devolucoes := CALCULATE ( [Pedidos], fPedidos[Status] = "Devolvido" )
+
+// Percentual de pedidos cancelados | Percentual
+Taxa Cancelamento := DIVIDE ( [Cancelamentos], [Pedidos] )
+
+// Percentual de pedidos devolvidos | Percentual
+Taxa Devolucao := DIVIDE ( [Devolucoes], [Pedidos] )
+
+// Percentual total com problemas | Percentual
+Taxa Problemas := DIVIDE ( [Cancelamentos] + [Devolucoes], [Pedidos] )
+
+// Valor bruto total de pedidos aceitos | Moeda
+Valor Bruto := SUM ( fPedidos[Valor_Bruto] )
+
+// Valor dos pedidos após descontos | Moeda
+Valor Pedidos := SUM ( fPedidos[Valor_Liquido] )
+
+// Valor de pedidos concluídos (proxy de receita) | Moeda
+Receita Confirmada := CALCULATE ( [Valor Pedidos], fPedidos[Status] = "Concluído" )
+
+// Valor associado a cancelamentos e devoluções | Moeda
+Valor Afetado := SUM ( fPedidos[Valor_Afetado] )
+
+// Ticket médio dos pedidos concluídos | Moeda
+Ticket Medio Concluido := DIVIDE ( [Receita Confirmada], [Pedidos Concluidos] )
+
+// Custo de referência dos itens concluídos | Moeda
+Custo Referencia Concluido := SUMX ( FILTER ( fPedidos, fPedidos[Status] = "Concluído" ), fPedidos[Quantidade] * RELATED ( dProduto[Custo_Referencia] ) )
+
+// Margem estimada antes das demais despesas | Moeda
+Margem Estimada := [Receita Confirmada] - [Custo Referencia Concluido]
+
+// Teto da taxa de cancelamentos por mês e lojista | Percentual
+Limite Cancelamento := MAX ( fMetas[Limite_Cancelamento] )
+
+// Teto da taxa de devoluções por mês e lojista | Percentual
+Limite Devolucao := MAX ( fMetas[Limite_Devolucao] )
+
+// Diferença contra o limite definido | Pontos percentuais
+Desvio Cancelamento := [Taxa Cancelamento] - [Limite Cancelamento]
+
+// Diferença contra o limite definido | Pontos percentuais
+Desvio Devolucao := [Taxa Devolucao] - [Limite Devolucao]
+
+// Linhas carregadas na tabela fato | Inteiro
+Conf Pedidos := COUNTROWS ( fPedidos )
+
+// Linhas rejeitadas da origem | Inteiro
+Conf Rejeitados := COUNTROWS ( Rejeitados )
+
+// Duplicidades na chave da dimensão lojista | Inteiro
+Conf PK Lojista := COUNTROWS ( dLojista ) - DISTINCTCOUNT ( dLojista[Cod_Lojista] )
+
+// Duplicidades na chave da dimensão produto | Inteiro
+Conf PK Produto := COUNTROWS ( dProduto ) - DISTINCTCOUNT ( dProduto[Cod_Produto] )
+
+// Pedidos sem dimensão de lojista | Inteiro
+Conf FK Lojista := COUNTROWS ( FILTER ( fPedidos, ISBLANK ( RELATED ( dLojista[Lojista] ) ) ) ) + 0
+
+// Pedidos sem dimensão de produto | Inteiro
+Conf FK Produto := COUNTROWS ( FILTER ( fPedidos, ISBLANK ( RELATED ( dProduto[Produto] ) ) ) ) + 0
+
+// Pedidos sem dimensão de região | Inteiro
+Conf FK Regiao := COUNTROWS ( FILTER ( fPedidos, ISBLANK ( RELATED ( dRegiao[Regiao] ) ) ) ) + 0

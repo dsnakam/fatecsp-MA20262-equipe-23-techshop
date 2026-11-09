@@ -1,0 +1,45 @@
+// fnPadronizarPedidos — padronização estrutural dos 3 arquivos
+(fonte as table) as table =>
+let
+    ColunasAlvo = {"Pedido_ID", "Data_Pedido", "Lojista", "SKU", "Produto", "Categoria", "Quantidade", "Valor_Unitario", "Status", "Motivo", "CEP", "UF", "Cidade", "Canal", "Dias_Despacho", "Desconto"},
+    DeParaColunas = {
+        {"ID_Pedido", "Pedido_ID"},
+        {"Dt_Compra", "Data_Pedido"},
+        {"Vendedor", "Lojista"},
+        {"Codigo_SKU", "SKU"},
+        {"Item", "Produto"},
+        {"Grupo", "Categoria"},
+        {"Qtd", "Quantidade"},
+        {"Preco_Unit", "Valor_Unitario"},
+        {"Situacao", "Status"},
+        {"Justificativa", "Motivo"},
+        {"CEP_Cliente", "CEP"},
+        {"Estado", "UF"},
+        {"Municipio", "Cidade"},
+        {"Origem", "Canal"},
+        {"Prazo_Despacho", "Dias_Despacho"},
+        {"Cupom_Desconto", "Desconto"},
+        {"Pedido", "Pedido_ID"},
+        {"Data", "Data_Pedido"},
+        {"Loja_Parceira", "Lojista"},
+        {"Cod_Produto", "SKU"},
+        {"Nome_Item", "Produto"},
+        {"Familia", "Categoria"},
+        {"Unidades", "Quantidade"},
+        {"Valor_Unit", "Valor_Unitario"},
+        {"Status_Pedido", "Status"},
+        {"Motivo_Ocorrencia", "Motivo"},
+        {"Cep", "CEP"},
+        {"UF_Comprador", "UF"},
+        {"Cidade_Comprador", "Cidade"},
+        {"Canal_Venda", "Canal"},
+        {"Dias_Ate_Despacho", "Dias_Despacho"},
+        {"Desc", "Desconto"}
+    },
+    ParesPresentes = List.Select(DeParaColunas, each List.Contains(Table.ColumnNames(fonte), _{0})),
+    Renomeadas = Table.RenameColumns(fonte, ParesPresentes, MissingField.Ignore),
+    ComCamposAusentes = List.Accumulate(ColunasAlvo, Renomeadas, (t,c) =>
+        if List.Contains(Table.ColumnNames(t),c) then t else Table.AddColumn(t,c,each null)),
+    ComLinha = Table.AddIndexColumn(ComCamposAusentes, "Linha_Origem", 2, 1, Int64.Type),
+    Resultado = Table.SelectColumns(ComLinha, ColunasAlvo & {"Linha_Origem"})
+in Resultado
